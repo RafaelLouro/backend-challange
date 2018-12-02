@@ -27,6 +27,7 @@
 		<module>config-server</module>
 		<module>discovery-server</module>
 		<module>provider</module>
+		<module>invillia</module>
 	</modules>
 
 </project>
