@@ -3,45 +3,43 @@ package com.invillia.acme.controller;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.web.client.RestTemplateBuilder;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
 
 import com.invillia.acme.dto.ProviderDTO;
-import com.netflix.appinfo.InstanceInfo;
-import com.netflix.discovery.EurekaClient;
+import com.invillia.acme.service.IProviderService;
 
 @RestController
+@RequestMapping(path = "/provider")
 public class InvilliaController {
-
-	private static final String SLASH = "/";
-	private static final String PROVIDER_SERVICE_NAME = "provider";
-	private static final String API = "api";
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(InvilliaController.class);
 
-	@Autowired
-	private EurekaClient client;
+	private IProviderService providerService;
 
 	@Autowired
-	private RestTemplateBuilder restTemplateBuilder;
+	public InvilliaController(IProviderService providerService) {
+		this.providerService = providerService;
+	}
 
-	@PostMapping(path = "/provider")
+	/**
+	 * Post de um novo {@link ProviderDTO}.
+	 * 
+	 * @param dto
+	 * @return {@link ProviderDTO}
+	 */
+	@PostMapping
 	public ResponseEntity<ProviderDTO> postProvider(@RequestBody ProviderDTO dto) {
 		LOGGER.debug("Objeto recebido: " + dto.toString());
 
-		RestTemplate restTemplate = restTemplateBuilder.build();
-		StringBuilder postUrl = createUrlBuilderProviderService();
-
-		ResponseEntity<ProviderDTO> response = restTemplate.exchange(postUrl.toString(), HttpMethod.POST,
-				new HttpEntity<ProviderDTO>(dto), ProviderDTO.class);
+		ResponseEntity<ProviderDTO> response = providerService.postProvider(dto);
 
 		if (response.getStatusCode().equals(HttpStatus.CREATED)) {
 			return response;
@@ -50,15 +48,17 @@ public class InvilliaController {
 		}
 	}
 
-	@PutMapping(path = "/provider")
+	/**
+	 * Put de um {@link ProviderDTO} já existente.
+	 * 
+	 * @param dto
+	 * @return {@link ProviderDTO}
+	 */
+	@PutMapping
 	public ResponseEntity<ProviderDTO> putProvider(@RequestBody ProviderDTO dto) {
 		LOGGER.debug("Objeto recebido: " + dto.toString());
 
-		RestTemplate restTemplate = restTemplateBuilder.build();
-		StringBuilder putUrl = createUrlBuilderProviderService();
-
-		ResponseEntity<ProviderDTO> response = restTemplate.exchange(putUrl.toString(), HttpMethod.PUT,
-				new HttpEntity<ProviderDTO>(dto), ProviderDTO.class);
+		ResponseEntity<ProviderDTO> response = providerService.putProvider(dto);
 
 		if (response.getStatusCode().equals(HttpStatus.OK)) {
 			return response;
@@ -67,19 +67,23 @@ public class InvilliaController {
 		}
 	}
 
-	private StringBuilder createUrlBuilderProviderService() {
-		InstanceInfo instanceInfo = client.getNextServerFromEureka(PROVIDER_SERVICE_NAME, false);
-		String baseUrl = instanceInfo.getHomePageUrl();
+	/**
+	 * Recupera um {@link ProviderDTO} pelo id.
+	 * 
+	 * @param id
+	 * @return {@link ProviderDTO} recuperado
+	 */
+	@GetMapping(path = "/{id}")
+	public ResponseEntity<ProviderDTO> getProvider(@PathVariable Long id) {
+		LOGGER.debug("Objeto recebido: " + id.toString());
 
-		LOGGER.debug("URL Base: " + baseUrl);
+		ResponseEntity<ProviderDTO> response = providerService.getProvider(id);
 
-		StringBuilder urlBuilder = new StringBuilder(baseUrl);
-		urlBuilder.append(SLASH);
-		urlBuilder.append(PROVIDER_SERVICE_NAME);
-		urlBuilder.append(SLASH);
-		urlBuilder.append(API);
-
-		return urlBuilder;
+		if (response.getStatusCode().equals(HttpStatus.OK)) {
+			return response;
+		} else {
+			return new ResponseEntity<>(response.getStatusCode());
+		}
 	}
 
 }
